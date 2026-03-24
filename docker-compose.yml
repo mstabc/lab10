@@ -1,0 +1,91 @@
+version: "3.9"
+
+services:
+  nginx:
+    image: nginx:1.25-alpine
+    container_name: lab10_nginx
+    ports:
+      - "9090:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - api1
+      - api2
+    networks:
+      - lab10
+
+  api1:
+    build:
+      context: ./api
+    container_name: lab10_api1
+    environment:
+      - INSTANCE_ID=api1
+      - MONGO_URI=mongodb://mongo:27017/lab10
+      - REDIS_HOST=redis
+      - FAULT_INJECTOR_URL=http://fault_injector:5001
+    depends_on:
+      - mongo
+      - redis
+      - fault_injector
+    networks:
+      - lab10
+
+  api2:
+    build:
+      context: ./api
+    container_name: lab10_api2
+    environment:
+      - INSTANCE_ID=api2
+      - MONGO_URI=mongodb://mongo:27017/lab10
+      - REDIS_HOST=redis
+      - FAULT_INJECTOR_URL=http://fault_injector:5001
+    depends_on:
+      - mongo
+      - redis
+      - fault_injector
+    networks:
+      - lab10
+
+  fault_injector:
+    build:
+      context: ./fault_injector
+    container_name: lab10_fault_injector
+    ports:
+      - "5001:5001"
+    networks:
+      - lab10
+
+  mongo:
+    image: mongo:7.0
+    container_name: lab10_mongo
+    ports:
+      - "27017:27017"
+    networks:
+      - lab10
+
+  redis:
+    image: redis:7.2-alpine
+    container_name: lab10_redis
+    ports:
+      - "6379:6379"
+    networks:
+      - lab10
+
+  # Load Generator
+  runner:
+    build:
+      context: ./scripts
+    container_name: lab10_runner
+    environment:
+      - API_URL=http://nginx:80
+      - FAULT_INJECTOR_URL=http://fault_injector:5001
+    depends_on:
+      - nginx
+      - fault_injector
+    networks:
+      - lab10
+    command: ["tail", "-f", "/dev/null"]
+
+networks:
+  lab10:
+    driver: bridge
