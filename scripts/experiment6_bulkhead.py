@@ -40,9 +40,6 @@ def send(endpoint: str, student_id: int, client_timeout: float = 3.0) -> dict:
                 "endpoint": endpoint}
 
 
-# ──────────────────────────────────────────────
-# Bulkhead simulation using separate ThreadPool executors
-# ──────────────────────────────────────────────
 
 def run_without_bulkhead(duration: int, total_threads: int,
                           analytics_users: int, critical_users: int) -> dict:
@@ -180,21 +177,7 @@ def main():
                             ANALYTICS_USERS, CRITICAL_USERS)
     print_endpoint_report("WITH BULKHEAD", r2["critical"], r2["analytics"])
 
-    print("""
-🔑  Lesson: Resource isolation prevents noisy-neighbour problems.
-    A bulkhead ensures a slow or bursty non-critical service
-    cannot steal the threads needed by a critical one.
 
-    Real implementations:
-      • Separate thread pools per service client  (Hystrix/Resilience4j)
-      • Kubernetes resource limits / QoS classes
-      • Connection pool sizing per endpoint
-
-    Questions:
-    1. Without bulkhead, what happened to /register-course latency?
-    2. With bulkhead, did analytics get slower? Is that acceptable?
-    3. Would you prefer a slow system or a partially-degraded system?
-""")
 
     reset_faults()
     print("[cleanup] Done.\n")
